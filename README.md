@@ -9,6 +9,6 @@ Sublime Text 中文输入法支持，解决中文输入法等无法跟随的问�
 
 ## 安装
 
-注意：这是 https://github.com/chikatoike/IMESupport 的 fork 版本，所以不要使用 package_control 安装。
+注意：这是 [chikatoike/IMESupport](https://github.com/chikatoike/IMESupport) 的 fork 版本，所以不要使用 package_control 安装。
 
 直接将该项目克隆或是下载到 Sublime_Text_3_Install_Path/Data/Packages 目录下。
