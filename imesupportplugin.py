@@ -497,6 +497,23 @@ class ImeSupportEventListener(sublime_plugin.EventListener):
     def on_selection_modified(self, view):
         self.update(view)
 
+
+    def on_post_window_command(self, window, command_name, args):
+        if command_name == 'toggle_side_bar':
+            # side_bar 的启用和关闭有 animation, 执行需要一段时间
+            # 这里延时更新状态，让 side_bar 飞一会
+            # FIXME 如果 side_bar 设置过宽或是在在 400 毫秒内输入，还是有问题
+            # 暂时还没有发现更好的 api 支持
+            sublime.set_timeout(self.update_later, 400)
+
+
+    def update_later(self):
+        window = sublime.active_window()
+        if window:
+            view = window.active_view()
+            if view:
+                self.update(view)
+
     def update(self, view):
         if not self.initialized:
             setup()

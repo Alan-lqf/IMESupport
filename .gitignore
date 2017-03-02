@@ -1,0 +1,5 @@
+.ropeproject
+hook/*.obj
+hook/*.dll
+hook/*.exp
+hook/*.lib
