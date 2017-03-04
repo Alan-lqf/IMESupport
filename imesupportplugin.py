@@ -61,7 +61,6 @@ class COMPOSITIONFORM(Structure):
         ('rcArea', RECT),
     ]
 
-
 # from http://d.hatena.ne.jp/pipehead/20071210
 import sys
 
@@ -530,10 +529,10 @@ class ImeSupportEventListener(sublime_plugin.EventListener):
             self.layouts[id] = WindowLayout(window)
 
         if view.settings().get('is_widget'):
-            pos = self.layouts[id].get_widget_cursor_position(view, view.sel()[0].a)
+            pos = self.layouts[id].get_widget_cursor_position(view, view.sel()[0].b)
         else:
             self.layouts[id].update_status(view)
-            pos = self.layouts[id].calc_cursor_position(view, view.sel()[0].a)
+            pos = self.layouts[id].calc_cursor_position(view, view.sel()[0].b)
 
         set_pos(window.hwnd(), pos)
 
