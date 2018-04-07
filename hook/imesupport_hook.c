@@ -104,12 +104,29 @@ static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam
 	static int x = INVALID_VALUE;
 	static int y = INVALID_VALUE;
 	static int font_height = INVALID_VALUE;
+	UINT uDpi = 96;
+	float scaling = 1.0;
 
 	switch (msg) {
 	case WM_IME_STARTCOMPOSITION:
 	case WM_IME_COMPOSITION:
 	case WM_IME_NOTIFY:
 		if (x != INVALID_VALUE && y != INVALID_VALUE && font_height != INVALID_VALUE) {
+			/* 屏幕缩放调整 */
+			DPI_AWARENESS dpiAwareness = GetAwarenessFromDpiAwarenessContext(GetThreadDpiAwarenessContext());
+			switch (dpiAwareness) {
+				case DPI_AWARENESS_SYSTEM_AWARE:
+					uDpi = GetDpiForSystem();
+					break;
+				case DPI_AWARENESS_PER_MONITOR_AWARE:
+					uDpi = GetDpiForWindow(hWnd);
+					break;
+			}
+
+			scaling = (float) uDpi / 96.0;
+			x = (int) (x * scaling);
+			y = (int) (y * scaling);
+			font_height = (int) (font_height * scaling);
 			SetInlinePosition(hWnd, x, y, font_height);
 		}
 		break;

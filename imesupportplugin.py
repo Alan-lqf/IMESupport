@@ -201,7 +201,7 @@ class WindowLayout(object):
         if "text_to_window" in dir(view):
             p = view.text_to_window(cursor)
             font_face, font_height = self.get_font_info(view)
-            return (int(p[0]), int(p[1]), font_face, font_height)
+            return (int(p[0]) + 2, int(p[1]), font_face, font_height)
 
         abspoint = view.text_to_layout(cursor)
         offset = view.viewport_position()
