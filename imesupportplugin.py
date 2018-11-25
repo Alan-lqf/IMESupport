@@ -49,17 +49,17 @@ class ImeSupportEventListener(sublime_plugin.EventListener):
         self.layouts = {}
         self.initialized = False
 
-    def on_new(self, view):
-        self.update(view)
-
     def on_activated(self, view):
-        self.update(view)
-
-    def on_deactivated(self, view):
         self.update(view)
 
     def on_modified(self, view):
         self.update(view)
+
+    def on_selection_modified(self, view):
+        self.update(view)
+
+    def on_post_window_command(self, window, command_name, args):
+        sublime.set_timeout_async(self.update(window.active_view()), 400)
 
     def update(self, view):
         if view is None:
@@ -80,6 +80,7 @@ class ImeSupportEventListener(sublime_plugin.EventListener):
             self.layouts[id] = WindowLayout(window)
 
         pos = self.layouts[id].calc_cursor_position(view, view.sel()[0].b)
+        print(pos)
         globalhook.set_inline_position(window.hwnd(), *pos)
 
 

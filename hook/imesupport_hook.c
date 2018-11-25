@@ -99,6 +99,27 @@ static LRESULT CALLBACK MyHookProc(int nCode, WPARAM wParam, LPARAM lParam)
     return CallNextHookEx(hHook, nCode, wParam, lParam);
 }
 
+static void im_set_composition(HWND hWnd, int x, int y, LOGFONT *lf)
+{
+    HIMC hImc;
+
+    if ((hImc = ImmGetContext(hWnd)) != (HIMC) 0) {
+        if (ImmGetOpenStatus(hImc)) {
+            ImmSetCompositionFont(hImc, lf);
+
+            COMPOSITIONFORM cfs;
+            cfs.dwStyle = CFS_POINT;
+            cfs.ptCurrentPos.x = x;
+            cfs.ptCurrentPos.y = y;
+
+            // MapWindowPoints(HWND_DESKTOP, hWnd, &cfs.ptCurrentPos, 1);
+            ImmSetCompositionWindow(hImc, &cfs);
+        }
+
+        ImmReleaseContext(hWnd, hImc);
+    }
+}
+
 static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     static int x = INVALID_VALUE;
@@ -112,30 +133,26 @@ static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam
         "Consolas"
     };
     static UINT uDpi = 96;
-    float scaling = 1.0;
+    static float scaling = 1.0;
     HIMC hImc;
 
     SetFont(&lf);
     switch (msg) {
+        case WM_IME_STARTCOMPOSITION:
+        case WM_IME_COMPOSITION:
         case WM_IME_NOTIFY:
-            if ((hImc = ImmGetContext(hWnd)) == (HIMC) 0) {
+            if (x == INVALID_VALUE || y == INVALID_VALUE) {
                 break;
             }
+            if ((hImc = ImmGetContext(hWnd)) != (HIMC) 0) {
+                if (msg == WM_IME_NOTIFY && wParam == IMN_SETCOMPOSITIONWINDOW) {
+                    ImmReleaseContext(hWnd, hImc);
+                    break;
+                }
 
-            if (ImmGetOpenStatus(hImc)) {
-                ImmSetCompositionFont(hImc, &lf);
-
-                COMPOSITIONFORM cfs;
-                cfs.dwStyle = CFS_POINT;
-                cfs.ptCurrentPos.x = x;
-                cfs.ptCurrentPos.y = y;
-
-                // MapWindowPoints(HWND_DESKTOP, hWnd, &cfs.ptCurrentPos, 1);
-
-                ImmSetCompositionWindow(hImc, &cfs);
+                im_set_composition(hWnd, x, y, &lf);
+                ImmReleaseContext(hWnd, hImc);
             }
-
-            ImmReleaseContext(hWnd, hImc);
             break;
         default:
             if (msg == GetMessageId()) {
