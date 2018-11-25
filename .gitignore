@@ -1,5 +1,6 @@
 .ropeproject
 font_name.txt
+imesupport.log
 hook/*.obj
 hook/*.dll
 hook/*.exp

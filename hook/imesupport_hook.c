@@ -50,7 +50,6 @@ EXPORT BOOL EndHook(void)
     }
     BOOL ret = UnhookWindowsHookEx(hHook);
     hHook = NULL;
-    Trace("unhook", TRUE);
     return ret;
 }
 
