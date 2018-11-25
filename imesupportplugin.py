@@ -49,16 +49,16 @@ class ImeSupportEventListener(sublime_plugin.EventListener):
         self.layouts = {}
         self.initialized = False
 
-    def on_new_async(self, view):
+    def on_new(self, view):
         self.update(view)
 
-    def on_activated_async(self, view):
+    def on_activated(self, view):
         self.update(view)
 
-    def on_deactivated_async(self, view):
+    def on_deactivated(self, view):
         self.update(view)
 
-    def on_modified_async(self, view):
+    def on_modified(self, view):
         self.update(view)
 
     def update(self, view):
