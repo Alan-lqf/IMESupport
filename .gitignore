@@ -1,4 +1,5 @@
 .ropeproject
+font_name.txt
 hook/*.obj
 hook/*.dll
 hook/*.exp

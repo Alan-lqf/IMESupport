@@ -1,89 +1,90 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <windows.h>
+#include <versionhelpers.h>
 #include <stdio.h>
 #include <tchar.h>
+#include <strsafe.h>
 #include "imesupport_hook.h"
-
 
 static LRESULT CALLBACK MyHookProc(int nCode, WPARAM wp, LPARAM lp);
 static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-static void Trace2(const TCHAR *str, BOOL append);
-static void Trace(const TCHAR *str);
+static void Trace(const TCHAR *str, BOOL append);
 
-
-static BOOL bEnableTrace = FALSE;
 static HINSTANCE hModule = NULL;
 static HHOOK hHook = NULL;
 
-
 BOOL WINAPI DllMain(HINSTANCE hModuleDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
-	hModule = hModuleDLL;
+    hModule = hModuleDLL;
 
-	switch (fdwReason) {
-	case DLL_PROCESS_ATTACH:
-		break;
-	case DLL_PROCESS_DETACH:
-		if (hHook != NULL) {
-			EndHook();
-		}
-		break;
-	}
+    switch (fdwReason) {
+        case DLL_PROCESS_ATTACH:
+            break;
+        case DLL_PROCESS_DETACH:
+            if (hHook != NULL) {
+                EndHook();
+            }
+            break;
+    }
     return TRUE;
 }
 
-EXPORT BOOL StartHook(void)
+
+EXPORT BOOL StartHook(HWND hwnd)
 {
-	if (hHook != NULL) {
-		return FALSE;
-	}
-	hHook = SetWindowsHookEx(WH_GETMESSAGE, MyHookProc, hModule, 0);
-	return hHook != NULL;
+    if (hHook != NULL) {
+        return FALSE;
+    }
+
+    DWORD tid = GetWindowThreadProcessId(hwnd, NULL);
+    hHook = SetWindowsHookEx(WH_GETMESSAGE, MyHookProc, hModule, tid);
+
+    return hHook != NULL;
 }
 
 EXPORT BOOL EndHook(void)
 {
-	if (hHook == NULL) {
-		return FALSE;
-	}
-	BOOL ret = UnhookWindowsHookEx(hHook);
-	hHook = NULL;
-	return ret;
+    if (hHook == NULL) {
+        return FALSE;
+    }
+    BOOL ret = UnhookWindowsHookEx(hHook);
+    hHook = NULL;
+    Trace("unhook", TRUE);
+    return ret;
+}
+
+void SetFont(LOGFONT *lf)
+{
+    FILE *fp;
+    TCHAR szFontInfoFile[_MAX_PATH];
+    TCHAR szFull[_MAX_PATH];
+    TCHAR szDrive[_MAX_PATH];
+    TCHAR szDir[_MAX_DIR];
+    TCHAR szFontName[128] = {0};
+
+    GetModuleFileName(hModule, szFull, sizeof(szFull) / sizeof(TCHAR));
+    _tsplitpath(szFull, szDrive, szDir, NULL, NULL);
+    _tmakepath(szFontInfoFile, szDrive, szDir, _T("font_name"), _T("txt"));
+
+    if ((fp = fopen(szFontInfoFile, _T("r"))) != NULL) {
+        if (fread(szFontName, sizeof(TCHAR), 128, fp) > 0) {
+            _sntprintf((LPSTR) lf->lfFaceName, LF_FACESIZE, _T("%s"), szFontName);
+        }
+
+        fclose(fp);
+    }
 }
 
 EXPORT int GetMessageId(void)
 {
-	static UINT message = 0;
+    static UINT message = 0;
 
-	if (message == 0) {
-		message = RegisterWindowMessage(_T("WM_IMESUPPORT_SET_INLINE_POSITION"));
-	}
+    if (message == 0) {
+        message = RegisterWindowMessage(_T("WM_IMESUPPORT_SET_INLINE_POSITION"));
+    }
 
-	return message;
-}
-
-EXPORT BOOL SetInlinePosition(HWND hWnd, int x, int y, int font_height)
-{
-	BOOL ret = FALSE;
-	HIMC hIMC = ImmGetContext(hWnd);
-	if (ImmGetOpenStatus(hIMC)) {
-		COMPOSITIONFORM cf = {0};
-		cf.dwStyle = CFS_POINT;
-		cf.ptCurrentPos.x = x;
-		cf.ptCurrentPos.y = y;
-		MapWindowPoints(NULL, hWnd, &cf.ptCurrentPos, 1);
-		if (ImmSetCompositionWindow(hIMC, &cf)) {
-			LOGFONTW lf = {0};
-			lf.lfHeight = font_height;
-			if (ImmSetCompositionFontW(hIMC, &lf)) {
-				ret = TRUE;
-			}
-		}
-	}
-
-	ImmReleaseContext(hWnd, hIMC);
-	return ret;
+    return message;
 }
 
 static LRESULT CALLBACK MyHookProc(int nCode, WPARAM wParam, LPARAM lParam)
@@ -101,87 +102,108 @@ static LRESULT CALLBACK MyHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	static int x = INVALID_VALUE;
-	static int y = INVALID_VALUE;
-	static int font_height = INVALID_VALUE;
-	UINT uDpi = 96;
-	float scaling = 1.0;
+    static int x = INVALID_VALUE;
+    static int y = INVALID_VALUE;
+    static int font_size = INVALID_VALUE;
+    static LOGFONT lf =
+    {
+        -12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+        PROOF_QUALITY, FIXED_PITCH | FF_DONTCARE,
+        "Consolas"
+    };
+    static UINT uDpi = 96;
+    float scaling = 1.0;
+    HIMC hImc;
 
-	switch (msg) {
-	/* case WM_IME_STARTCOMPOSITION: */
-	/* case WM_IME_COMPOSITION: */
-	case WM_IME_NOTIFY:
-		if (x != INVALID_VALUE && y != INVALID_VALUE && font_height != INVALID_VALUE) {
-			/* 屏幕缩放调整 */
-			DPI_AWARENESS dpiAwareness = GetAwarenessFromDpiAwarenessContext(GetThreadDpiAwarenessContext());
-			switch (dpiAwareness) {
-				case DPI_AWARENESS_SYSTEM_AWARE:
-					uDpi = GetDpiForSystem();
-					break;
-				case DPI_AWARENESS_PER_MONITOR_AWARE:
-					uDpi = GetDpiForWindow(hWnd);
-					break;
-			}
+    SetFont(&lf);
+    switch (msg) {
+        case WM_IME_NOTIFY:
+            if ((hImc = ImmGetContext(hWnd)) == (HIMC) 0) {
+                break;
+            }
 
-			scaling = (float) uDpi / 96.0;
-			x = (int) (x * scaling);
-			y = (int) (y * scaling);
-			font_height = (int) (font_height * scaling);
-			SetInlinePosition(hWnd, x, y, font_height);
-		}
-		break;
-	default:
-		if (msg == GetMessageId()) {
-			if (wParam != INVALID_VALUE && lParam != INVALID_VALUE) {
-				x = (wParam >> 16) & 0xffff;
-				y = wParam & 0xffff;
-				font_height = lParam;
-			}
-			else {
-				x = INVALID_VALUE;
-				y = INVALID_VALUE;
-				font_height = INVALID_VALUE;
-			}
-		}
-		break;
-	}
+            if (ImmGetOpenStatus(hImc)) {
+                ImmSetCompositionFont(hImc, &lf);
 
-	return 0;
-}
+                COMPOSITIONFORM cfs;
+                cfs.dwStyle = CFS_POINT;
+                cfs.ptCurrentPos.x = x;
+                cfs.ptCurrentPos.y = y;
 
-static void Trace2(const TCHAR *str, BOOL append)
-{
-#ifdef _DEBUG
-	FILE *fp;
-	TCHAR szLogFile[_MAX_PATH];
-	TCHAR szFull[_MAX_PATH];
-	TCHAR szDrive[_MAX_DRIVE];
-	TCHAR szDir[_MAX_DIR];
+                // MapWindowPoints(HWND_DESKTOP, hWnd, &cfs.ptCurrentPos, 1);
 
-	if (!bEnableTrace) {
-		return;
-	}
+                ImmSetCompositionWindow(hImc, &cfs);
+            }
 
-	_tprintf(str);
-	_tprintf(_T("\n"));
+            ImmReleaseContext(hWnd, hImc);
+            break;
+        default:
+            if (msg == GetMessageId()) {
+                if (wParam != INVALID_VALUE && lParam != INVALID_VALUE) {
+                    x = (wParam >> 16) & 0xffff;
+                    y = wParam & 0xffff;
 
-	GetModuleFileName(hModule, szFull, sizeof(szFull) / sizeof(TCHAR));
-	_tsplitpath(szFull, szDrive, szDir, NULL, NULL);
-	_tmakepath(szLogFile, szDrive, szDir, _T("imesupport"), _T("log"));
+                    font_size = (lParam >> 16) & 0xffff;
 
-	fp = _tfopen(szLogFile, append ? _T("a") : _T("w"));
+                    HDC hdc;
+                    hdc = GetDC(hWnd);
+                    lf.lfHeight = - MulDiv(font_size, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+                    ReleaseDC(hWnd, hdc);
 
-	if (fp == NULL) {
-		return;
-	}
-
-	_ftprintf(fp, _T("%s"), str);
-	_ftprintf(fp, _T("\n"));
-	fclose(fp);
+#if WINVER > 0x6010
+                    DPI_AWARENESS dpiAwareness = GetAwarenessFromDpiAwarenessContext(GetThreadDpiAwarenessContext());
+                    switch (dpiAwareness) {
+                        case DPI_AWARENESS_SYSTEM_AWARE:
+                            uDpi = GetDpiForSystem();
+                            break;
+                        case DPI_AWARENESS_PER_MONITOR_AWARE:
+                            uDpi = GetDpiForWindow(hWnd);
+                            break;
+                    }
+                    scaling = (float) (uDpi / 96.0);
+#else
+                    scaling = (float) ((lParam & 0xffff) / 100.0);
 #endif
+
+                    x = (int) (x * scaling);
+                    y = (int) (y * scaling);
+
+                }
+                else {
+                    x = INVALID_VALUE;
+                    y = INVALID_VALUE;
+                    font_size = INVALID_VALUE;
+                }
+            }
+            break;
+    }
+
+    return 0;
 }
 
-static void Trace(const TCHAR *str)
+static void Trace(const TCHAR *str, BOOL append)
 {
-	Trace2(str, TRUE);
+    FILE *fp;
+    TCHAR szLogFile[_MAX_PATH];
+    TCHAR szFull[_MAX_PATH];
+    TCHAR szDrive[_MAX_DRIVE];
+    TCHAR szDir[_MAX_DIR];
+
+    GetModuleFileName(hModule, szFull, sizeof(szFull) / sizeof(TCHAR));
+    _tsplitpath(szFull, szDrive, szDir, NULL, NULL);
+    _tmakepath(szLogFile, szDrive, szDir, _T("imesupport"), _T("log"));
+
+    fp = _tfopen(szLogFile, append ? _T("a") : _T("w"));
+
+    if (fp == NULL) {
+        return;
+    }
+
+    _ftprintf(fp, _T("%s"), str);
+    _ftprintf(fp, _T("\n"));
+    fclose(fp);
 }
+
+
+// vim: st=4 sts=4 ts=4 et

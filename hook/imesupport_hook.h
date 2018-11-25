@@ -5,17 +5,22 @@
 
 
 #ifdef _MSC_VER
-  #define EXPORT __declspec(dllexport)
+#define EXPORT __declspec(dllexport)
 #else
-  #define EXPORT
+#define EXPORT
 #endif
 
 #define INVALID_VALUE 0xffffffff
 
+#ifndef WINVER
+#define WINVER 0x6010
+#endif
 
-EXPORT BOOL StartHook(void);
+
+EXPORT BOOL StartHook(HWND hwnd);
 EXPORT BOOL EndHook(void);
 EXPORT int GetMessageId(void);
-EXPORT BOOL SetInlinePosition(HWND hWnd, int x, int y, int font_height);
 
 #endif
+
+// vim: st=4 sts=4 ts=4 et
