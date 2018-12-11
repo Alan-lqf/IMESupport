@@ -6,7 +6,7 @@ Sublime Text 中文输入法支持，解决输入法候选框无法跟随 st 光
 
 ### 原理
 
-由于 st 默认不支持 IME (Input Method Editor)，导致在使用微软拼音、搜狗拼音等输入法输入中文的时候，候选框会固定在屏幕的一个角上，不会跟随光标的移动而移动。这个插件就是理用 st 的 api 接口和 Windows 的 hook (钩子) 机制，用 hackable (一种无奈且并不优雅) 的方式让 st 支持 IME (或者说 IMM/Input Method Manager)。
+由于 st 默认不支持 IME (Input Method Editor)，导致在使用微软拼音、搜狗拼音等输入法输入中文的时候，候选框会固定在屏幕的一个角上，不会跟随光标的移动而移动。这个插件就是利用 st 的 api 接口和 Windows 的 hook (钩子) 机制，用 hackable (一种无奈且并不优雅) 的方式让 st 支持 IME (或者说 IMM/Input Method Manager)。
 
 插件的主要操作分为两步:
 
@@ -18,11 +18,11 @@ Sublime Text 中文输入法支持，解决输入法候选框无法跟随 st 光
 
 由于旧版本的 st 没有获取光标相对于 st 窗口 (window) 的 api，最开始插件获取光标位置是通过获取当光标相对于 st 布局 (layout) 的位置，再配合侧边栏的宽度、手动配置调整参数等信息手动计算的，这样导致光标的位置极其不准确（换个主题可能侧边栏的宽度等就不同了），候选框跟随定位准确也就无从说起了。
 
-从 BUILD 3143 起，st 有了获取 api 支持，可以获取光标（cursor）相对于窗口位置的 api（View.text_to_window()), 并鉴于以前手动计算问题太多、太不可靠，所有对代码做了精简，直接使用新的 api，而不再支持手动计算方式，所以，此插件支持 Sublime Text 3 Build 3143+（注意：跟 3143 比较临近的版本 api 实现并不是很好，如光标在搜索等输入框时位置也无法获取，所以，尽量用最新版本吧）。
+从 BUILD 3143 起，st 有了可以获取光标（cursor）相对于窗口位置的 api（View.text_to_window()), 并鉴于以前手动计算问题太多、太不可靠，所有对代码做了精简，直接使用新的 api，而不再支持手动计算方式，所以，此插件支持 Sublime Text 3 Build 3143+（注意：跟 3143 比较临近的版本 api 实现并不是很好，如光标在搜索等输入框时位置也无法获取，so，尽量用最新版本吧）。
 
 ### Windows 系统版本和高清屏
 
-鉴于 Windows 对于高清屏（缩放率大于 100%）的支持并不是很好，从 Windows 10 起这种状况才有所改观，并且某些针对缩放率等信息的 Windows api 从 windows 10 起才开始支持，所以插件支持最好的 Windows 版本是 10。 如果 Windows 系统版本低于 Windows 10， 该插件也可以使用，唯一的区别就是无法自动获取显示的缩放率，如果使用缩放率大于 100，且小于 Windows 10 版本的 Windows，可以通过设置 ime_support_screen_scaling 手动配置一下。
+鉴于 Windows 对于高清屏（缩放率大于 100%）的支持并不是很好，从 Windows 10 起这种状况才有所改观，并且某些针对缩放率等信息的 Windows api 从 Windows 10 起才开始支持，所以插件支持最好的 Windows 版本是 10。 如果 Windows 系统版本低于 Windows 10， 该插件也可以使用，唯一的区别就是无法自动获取显示的缩放率，如果使用缩放率大于 100，且小于 Windows 10 版本的 Windows，可以通过设置 ime_support_screen_scaling 手动配置一下。
 
 缩放率 100% 的默认配置:
 ```json
