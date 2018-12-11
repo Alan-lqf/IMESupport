@@ -1,3 +1,4 @@
+import time
 import sublime
 import sublime_plugin
 
@@ -49,17 +50,23 @@ class ImeSupportEventListener(sublime_plugin.EventListener):
         self.layouts = {}
         self.initialized = False
 
+    def on_new(self, view):
+        sublime.set_timeout(lambda: self.update(view), 400)
+
     def on_activated(self, view):
-        self.update(view)
+        sublime.set_timeout(lambda: self.update(view), 200)
+
+    def on_deactivated(self, view):
+        sublime.set_timeout(lambda: self.update(view), 200)
 
     def on_modified(self, view):
-        self.update(view)
+        sublime.set_timeout(lambda: self.update(view), 200)
 
     def on_selection_modified(self, view):
-        self.update(view)
+        sublime.set_timeout(lambda: self.update(view), 200)
 
     def on_post_window_command(self, window, command_name, args):
-        sublime.set_timeout_async(self.update(window.active_view()), 400)
+        sublime.set_timeout(lambda: self.update(window.active_view()), 400)
 
     def update(self, view):
         if view is None:

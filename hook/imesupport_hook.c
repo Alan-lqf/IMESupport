@@ -185,6 +185,10 @@ static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam
                     x = (int) (x * scaling);
                     y = (int) (y * scaling);
 
+                    if ((hImc = ImmGetContext(hWnd)) != (HIMC) 0) {
+                        im_set_composition(hWnd, x, y, &lf);
+                        ImmReleaseContext(hWnd, hImc);
+                    }
                 }
                 else {
                     x = INVALID_VALUE;
