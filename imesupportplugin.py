@@ -80,7 +80,6 @@ class ImeSupportEventListener(sublime_plugin.EventListener):
             self.layouts[id] = WindowLayout(window)
 
         pos = self.layouts[id].calc_cursor_position(view, view.sel()[0].b)
-        print(pos)
         globalhook.set_inline_position(window.hwnd(), *pos)
 
 
