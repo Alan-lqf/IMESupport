@@ -138,7 +138,11 @@ static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam
 
     SetFont(&lf);
     switch (msg) {
-        case WM_IME_STARTCOMPOSITION:
+        // about ime messages, see: https://docs.microsoft.com/en-us/windows/desktop/Intl/ime-messages
+        // WM_IME_CONTROL: change the position of a composition window
+        // WM_IME_COMPOSITION: notifies the application about changes to the composition string
+        // WM_IME_NOTIFY: general changes to the status of the IME windows
+        case WM_IME_CONTROL:
         case WM_IME_COMPOSITION:
         case WM_IME_NOTIFY:
             if (x == INVALID_VALUE || y == INVALID_VALUE) {
