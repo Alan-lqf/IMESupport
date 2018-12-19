@@ -1,3 +1,4 @@
+import os
 import time
 import sublime
 import sublime_plugin
@@ -77,7 +78,8 @@ class ImeSupportEventListener(sublime_plugin.EventListener):
 
         if not self.initialized:
             setup(window.hwnd())
-            with open('font_name.txt', 'wb') as f:
+            fontFile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'font_name.txt')
+            with open(fontFile, 'wb') as f:
                 f.write(view.settings().get('font_face', '').encode('utf-8'))
 
             self.initialized = True
