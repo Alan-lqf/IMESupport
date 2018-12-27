@@ -51,7 +51,7 @@ fork 版本，所以不要使用 package_control 安装。
 ### 2018-11-25
 * 简化代码，放弃支持 Sublime Text 老版本 (Sublime Text 3.0+ 起)
 * 兼容 Windows 7 +
-* 兼容 搜狗拼音、QQ 拼音
+* 兼容 搜狗拼音、QQ 拼音、手心输入法、小狼毫输入法
 
 ### 2017-07-31
 * 新版本 (dev build 3142) 可以使用 View.text_to_view 获取光标的位置。

@@ -142,18 +142,21 @@ static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam
         // WM_IME_CONTROL: change the position of a composition window
         // WM_IME_COMPOSITION: notifies the application about changes to the composition string
         // WM_IME_NOTIFY: general changes to the status of the IME windows
-        case WM_IME_CONTROL:
+        //
+        // case WM_IME_CONTROL:
         case WM_IME_COMPOSITION:
         case WM_IME_NOTIFY:
             if (x == INVALID_VALUE || y == INVALID_VALUE) {
                 break;
             }
-            if ((hImc = ImmGetContext(hWnd)) != (HIMC) 0) {
-                if (msg == WM_IME_NOTIFY && wParam == IMN_SETCOMPOSITIONWINDOW) {
-                    ImmReleaseContext(hWnd, hImc);
-                    break;
-                }
 
+            // sogou use WM_IME_COMPOSITION，and send WM_IME_NOTIFY +
+            // IMN_SETCOMPOSITIONWINDOW, it will cause a dead loop
+            if (msg == WM_IME_NOTIFY && wParam == IMN_SETCOMPOSITIONWINDOW) {
+                break;
+            }
+
+            if ((hImc = ImmGetContext(hWnd)) != (HIMC) 0) {
                 im_set_composition(hWnd, x, y, &lf);
                 ImmReleaseContext(hWnd, hImc);
             }
@@ -165,6 +168,7 @@ static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam
                     y = wParam & 0xffff;
 
                     font_size = (lParam >> 16) & 0xffff;
+                    scaling = (float) ((lParam & 0xffff) / 100.0);
 
                     HDC hdc;
                     hdc = GetDC(hWnd);
@@ -172,6 +176,7 @@ static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam
                     ReleaseDC(hWnd, hdc);
 
 #if WINVER > 0x6010
+                    // only windows 10 support these api
                     DPI_AWARENESS dpiAwareness = GetAwarenessFromDpiAwarenessContext(GetThreadDpiAwarenessContext());
                     switch (dpiAwareness) {
                         case DPI_AWARENESS_SYSTEM_AWARE:
@@ -182,10 +187,7 @@ static LRESULT CALLBACK WindowMessageHookProc(HWND hWnd, UINT msg, WPARAM wParam
                             break;
                     }
                     scaling = (float) (uDpi / 96.0);
-#else
-                    scaling = (float) ((lParam & 0xffff) / 100.0);
 #endif
-
                     x = (int) (x * scaling);
                     y = (int) (y * scaling);
 
@@ -228,6 +230,5 @@ static void Trace(const TCHAR *str, BOOL append)
     _ftprintf(fp, _T("\n"));
     fclose(fp);
 }
-
 
 // vim: st=4 sts=4 ts=4 et
