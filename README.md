@@ -1,3 +1,7 @@
+## Sublime Text Build 3186
+
+从 BUILD 3186 开始，ST 官方支持 IME 了，此插件或许可以被标注 Deprecated 了。
+
 ## IMESupport
 
 Sublime Text 中文输入法支持，解决输入法候选框无法跟随 st 光标 (cursor) 的问题。
